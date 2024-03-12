@@ -1,5 +1,5 @@
 import { PlusCircle } from '@phosphor-icons/react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import styles from './App.module.css'
 
@@ -20,55 +20,52 @@ export function App() {
   const [tasks, setTasks] = useState<ITask[]>([])
   const [inputValue, setInputValue] = useState('')
 
-  const checkedTasksCounter = tasks.reduce((prevValue, currentTask) => {
-    if (currentTask.isChecked) {
-      return prevValue + 1
+  useEffect(() => {
+    const tasksSaved = localStorage.getItem('ITasks')
+    if (tasksSaved) {
+      setTasks(JSON.parse(tasksSaved))
     }
+  }, []) // Este efeito será executado apenas uma vez, quando o componente for montado
 
-    return prevValue
-  }, 0)
+  useEffect(() => {
+    // Salvar tarefas no localStorage sempre que houver mudanças
+    localStorage.setItem('ITasks', JSON.stringify(tasks))
+  }, [tasks]) // Este efeito será executado sempre que 'tasks' mudar
 
   function handleAddTask() {
-    if (!inputValue) {
+    if (!inputValue.trim()) {
       return
     }
 
     const newTask: ITask = {
-      id: new Date().getTime(),
-      text: inputValue,
+      id: Date.now(),
+      text: inputValue.trim(),
       isChecked: false,
     }
 
-    setTasks((state) => [...state, newTask])
+    setTasks((prevTasks) => [...prevTasks, newTask])
     setInputValue('')
   }
 
   function handleRemoveTask(id: number) {
-    const filteredTasks = tasks.filter((task) => task.id !== id)
-
-    if (!confirm('Deseja mesmo apagar essa tarefa?')) {
+    if (!window.confirm('Deseja mesmo apagar essa tarefa?')) {
       return
     }
 
-    setTasks(filteredTasks)
+    setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id))
   }
 
-  function handleToggleTask({ id, value }: { id: number; value: boolean }) {
-    const updatedTasks = tasks.map((task) => {
-      if (task.id === id) {
-        return { ...task, isChecked: value }
-      }
-
-      return { ...task }
-    })
-
-    setTasks(updatedTasks)
+  function handleToggleTask(id: number) {
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.id === id ? { ...task, isChecked: !task.isChecked } : task,
+      ),
+    )
   }
 
   return (
     <main>
       <Header />
-
       <section className={styles.content}>
         <div className={styles.taskInfoContainer}>
           <Input
@@ -80,21 +77,19 @@ export function App() {
             <PlusCircle size={16} color="#f2f2f2" weight="bold" />
           </Button>
         </div>
-
         <div className={styles.tasksList}>
           <ListHeader
             tasksCounter={tasks.length}
-            checkedTasksCounter={checkedTasksCounter}
+            checkedTasksCounter={tasks.filter((task) => task.isChecked).length}
           />
-
           {tasks.length > 0 ? (
             <div>
               {tasks.map((task) => (
                 <Item
                   key={task.id}
                   data={task}
-                  removeTask={handleRemoveTask}
-                  toggleTaskStatus={handleToggleTask}
+                  removeTask={() => handleRemoveTask(task.id)}
+                  toggleTaskStatus={() => handleToggleTask(task.id)}
                 />
               ))}
             </div>
