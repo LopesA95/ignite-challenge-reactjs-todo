@@ -41,7 +41,7 @@ export function Item({ data, removeTask, toggleTaskStatus }: Props) {
         </label>
       </div>
 
-      <button onClick={handleRemove} title='remove tasks'>
+      <button onClick={handleRemove} title="remove tasks">
         <Trash size={16} color="#808080" />
       </button>
     </div>
